@@ -1,0 +1,13 @@
+body {
+    width: 300px;
+  }
+  
+  h1 {
+    text-align: center;
+  }
+  
+  button {
+    display: block;
+    margin: 20px auto;
+  }
+  
