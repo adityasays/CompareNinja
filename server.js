@@ -34,7 +34,7 @@ async function fetchPrices(url, productName) {
   console.log('Fetching prices from:', url);
 
   try {
-    const response = await axios.get(url, { timeout: 19000 }); // setting the timeout for 19 sec , will remove later
+    const response = await axios.get(url, { timeout: 19000 });
 
     const prices = parsePrices(response.data, url, productName);
     return prices;
@@ -50,65 +50,38 @@ function parsePrices(html, url, productName) {
   const $ = cheerio.load(html);
   const prices = [];
 
-  let amazonFound = false;
-  let flipkartFound = false;
-
-  // Example: Extracting prices from Amazon
+  // Extracting prices from Amazon
   if (url.includes('amazon')) {
-    $('span.aok-offscreen').each((index, element) => {
-      if (!amazonFound) {
-        const priceText = $(element).text().trim();
-        const price = extractNumericValue(priceText);
-        if (price) {
-          prices.push({ platform: 'Amazon', productName: productName, price: price });
-          amazonFound = true;
-        }
+    const priceElement = $('#priceblock_ourprice');
+    if (priceElement) {
+      const priceText = priceElement.text().trim();
+      const price = extractNumericValue(priceText);
+      if (price) {
+        prices.push({ platform: 'Amazon', productName: productName, price: '₹' + price });
       }
-    });
+    }
   }
 
-  // Example: Extracting prices from Flipkart
+  // Extracting prices from Flipkart
   if (url.includes('flipkart')) {
-    $('div._30jeq3._16Jk6d').each((index, element) => {
-      if (!flipkartFound) {
-        const priceText = $(element).text().trim();
-        const price = extractNumericValue(priceText);
-        if (price) {
-          prices.push({ platform: 'Flipkart', productName: productName, price: price });
-          flipkartFound = true;
-        }
+    const priceElement = $('div._30jeq3._16Jk6d');
+    if (priceElement.length > 0) {
+      const priceText = priceElement.first().text().trim();
+      const price = extractNumericValue(priceText);
+      if (price) {
+        prices.push({ platform: 'Flipkart', productName: productName, price: '₹' + price });
       }
-
-      // Additional selector for Flipkart, if the previous one doesn't work
-      if (!flipkartFound) {
-        $('div._1vC4OE._3qQ9m1').each((index, element) => {
-          if (!flipkartFound) {
-            const priceText = $(element).text().trim();
-            const price = extractNumericValue(priceText);
-            if (price) {
-              prices.push({ platform: 'Flipkart', productName: productName, price: price });
-              flipkartFound = true;
-            }
-          }
-        });
-      }
-    });
+    } else {
+      prices.push({ platform: 'Flipkart', productName: productName, price: 'N/A' });
+    }
   }
 
-  if (amazonFound || flipkartFound) {
+  if (prices.length > 0) {
     console.log('Prices found:', prices);
     return prices;
   } else {
-    const notAvailable = [];
-    if (!amazonFound) {
-      notAvailable.push({ platform: 'Amazon', productName: productName, message: 'Not available on Amazon' });
-    }
-    if (!flipkartFound) {
-      notAvailable.push({ platform: 'Flipkart', productName: productName, message: 'Not available on Flipkart' });
-    }
-
-    console.log('Not available on both platforms:', notAvailable);
-    return notAvailable;
+    console.log('Prices not found on either platform.');
+    return [{ platform: 'N/A', productName: productName, price: 'N/A' }];
   }
 }
 

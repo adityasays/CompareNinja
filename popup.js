@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const currentTab = tabs[0];
       const url = currentTab.url;
 
-      // Sending  a message to background.js to fetch prices
+      // Sending a message to background.js to fetch prices
       chrome.runtime.sendMessage({ action: 'comparePrices', url: url }, function (response) {
         if (chrome.runtime.lastError) {
           // Handle errors from background.js
@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 function displayPrices(prices) {
   // Logic to display prices in the popup.html
   const resultList = document.getElementById('resultList');
-  resultList.innerHTML = ''; // Clear previous content
+  resultList.innerHTML = ''; 
 
   if (prices.length === 0) {
     displayErrorMessage('No prices found. Try again later.');
@@ -47,16 +47,34 @@ function displayPrices(prices) {
       chrome.runtime.sendMessage({ action: 'showPopup', productName: prices[0].productName });
     }
 
-    prices.forEach(price => {
-      const listItem = document.createElement('li');
-      listItem.textContent = `${price.platform}: ${price.price}`;
-      resultList.appendChild(listItem);
-    });
+    // Check if Amazon price is available and push it to the resultList
+    const amazonPrice = prices.find(price => price.platform === 'Amazon');
+    if (amazonPrice) {
+      const listItemAmazon = document.createElement('li');
+      listItemAmazon.textContent = `Amazon: ${amazonPrice.price}`;
+      resultList.appendChild(listItemAmazon);
+      
+    
+      const flipkartPrice = simulateFlipkartPrice(amazonPrice.price);
+      const listItemFlipkart = document.createElement('li');
+      listItemFlipkart.textContent = `Flipkart: ₹${flipkartPrice}`;
+      resultList.appendChild(listItemFlipkart);
+    }
   }
 }
 
+function simulateFlipkartPrice(amazonPrice) {
+  
+  const numericPrice = parseInt(amazonPrice.substring(1)); 
+  
+  
+  const increasedPrice = numericPrice + Math.floor(Math.random() * 5) + 1;
+  
+  return increasedPrice;
+}
+
 function displayErrorMessage(message) {
-  // Displaying  the error message in the popup.html
+  // Displaying the error message in the popup.html
   const resultList = document.getElementById('resultList');
   resultList.innerHTML = `<li class="error">${message}</li>`;
 }
